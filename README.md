@@ -15,7 +15,8 @@ Furthermore, adding a 1x1 convolution amongst other convolutional layers is a co
  
 ##### **Filter/Kernel Size Selection**
 Our original image is 256x256 in 2D space, with a depth of 3 for RGB (Red, Blue, Green). This will be downsized to a final input image size of 160x160x3. The number of filters for each layer was determined by using the powers of 2 popular approach:
-   | Layer | Purpose | Power | Filter |
+
+| Layer | Purpose | Power | Filter |
 | ------ | ------ | ------ | ------ |
 | Input | Original Image | - - | 3 |
 | 1 | Encoder | 2**6 | 64 |
@@ -127,18 +128,12 @@ Finally, we're able to construct the output layer with the same desired sizing a
  ### **Training Parameter Selection**
 With our FCN implemented, we now need to set the hyper parameters. First let's define the parameters we will be using: 
  ##### **Hyper Parameter Definition**
-- ##### **learning_rate:** 
-    - A value that multiplies the **derivative of the loss function** prior to subtracting from the corresponding **weight**
-- ##### **batch_size:** 
-    - Number of **images** that are propagated in a **single cycle**
-- ##### **num_epochs:** 
-    - Number of **cycles** that the entire training set propagates through the **network**
-- ##### **steps_per_epoch:** 
-    - Number of **batches** that propagate through the network in a single **epoch**
-- ##### **validation_steps:** 
-    - Number of **batches** for **validation images** that propagate through the network in a single **epoch**
-- ##### **workers:** 
-    - Number of **compute** processes **allocated**
+- **learning_rate:** A value that multiplies the **derivative of the loss function** prior to subtracting from the corresponding **weight**
+- **batch_size:** Number of **images** that are propagated in a **single cycle**
+- **num_epochs:** Number of **cycles** that the entire training set propagates through the **network**
+- **steps_per_epoch:** Number of **batches** that propagate through the network in a single **epoch**
+- **validation_steps:** Number of **batches** for **validation images** that propagate through the network in a single **epoch**
+- **workers:** Number of **compute** processes **allocated**
 
  ##### **Hyper Parameter Selection**
  
