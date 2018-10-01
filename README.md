@@ -106,6 +106,7 @@ Bilinear Upsampling helps us transform the downsampled image into the original i
 
 ![Bilinear_Upsampling](/assets/Bilinear_Upsampling.png)
 
+We will now define the Bilinear Upsampling function for use in constructing our Decoder:
  ```
  def bilinear_upsample(input_layer):
     output_layer = BilinearUpSampling2D((2,2))(input_layer)
