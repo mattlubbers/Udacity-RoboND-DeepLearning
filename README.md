@@ -15,7 +15,8 @@ Furthermore, adding a 1x1 convolution amongst other convolutional layers is a co
  
 ##### **Filter/Kernel Size Selection**
 Our original image is 256x256 in 2D space, with a depth of 3 for RGB (Red, Blue, Green). This will be downsized to a final input image size of 160x160x3. The number of filters for each layer was determined by using the powers of 2 popular approach:
-   | Layer | Purpose | Power | Filter |
+
+| Layer | Purpose | Power | Filter |
 | ------ | ------ | ------ | ------ |
 | Input | Original Image | - - | 3 |
 | 1 | Encoder | 2**6 | 64 |
@@ -127,18 +128,12 @@ Finally, we're able to construct the output layer with the same desired sizing a
  ### **Training Parameter Selection**
 With our FCN implemented, we now need to set the hyper parameters. First let's define the parameters we will be using: 
  ##### **Hyper Parameter Definition**
-- ##### **learning_rate:** 
-    - A value that multiplies the **derivative of the loss function** prior to subtracting from the corresponding **weight**
-- ##### **batch_size:** 
-    - Number of **images** that are propagated in a **single cycle**
-- ##### **num_epochs:** 
-    - Number of **cycles** that the entire training set propagates through the **network**
-- ##### **steps_per_epoch:** 
-    - Number of **batches** that propagate through the network in a single **epoch**
-- ##### **validation_steps:** 
-    - Number of **batches** for **validation images** that propagate through the network in a single **epoch**
-- ##### **workers:** 
-    - Number of **compute** processes **allocated**
+- **learning_rate:** A value that multiplies the **derivative of the loss function** prior to subtracting from the corresponding **weight**
+- **batch_size:** Number of **images** that are propagated in a **single cycle**
+- **num_epochs:** Number of **cycles** that the entire training set propagates through the **network**
+- **steps_per_epoch:** Number of **batches** that propagate through the network in a single **epoch**
+- **validation_steps:** Number of **batches** for **validation images** that propagate through the network in a single **epoch**
+- **workers:** Number of **compute** processes **allocated**
 
  ##### **Hyper Parameter Selection**
  
@@ -186,23 +181,83 @@ model.fit_generator(train_iter,
                     callbacks=callbacks,
                     workers = workers)
 ```
-Initial Training Curve. After a few Epochs:
+Both the training and validation loss curves were relatively linear with a steady rate of decline initially. After the 4th epoch of training, the training loss continued with a steady decline to reach 0.0252, yet the validation loss curve began to increase. The training and validation loss curves after the 2nd and 4th epoch can be referenced below:
 
 ![TrainingCurve_Epoch2](/assets/TrainingCurve_Epoch2.png)![TrainingCurve_Epoch2](/assets/TrainingCurve_Epoch4.png)
 
-Towards the end, still improving slightly. Getting worse and oscillating
+Initially the number of epochs was set to 50, however I suspended the training due to the oscillations in the training and validation loss curves. After the fourteenth epoch, the training loss had reached 0.0195 and the validation loss again began to rise. The training and validation loss curves after the thirteenth and fourteenth epoch can be referenced below:  
 
 ![TrainingCurve_Epoch2](/assets/TrainingCurve_Epoch13.png)![TrainingCurve_Epoch2](/assets/TrainingCurve_Epoch14.png)
 
+##### Model Weights
+After the model has been trained on AWS, the model weights were written to a file in HDF format:
+```
+weight_file_name = 'model_weights'
+model_tools.save_network(model, weight_file_name)
+```
 ### **Performance Results**
-Here's training results from segmentation with the target:
+The result from the trained model provides the semantic segmentation for images that include our target, as well as images without the target, but contain other environment features and pedestrians. 
+
+##### Semantic Segmentation with the target:
 ![segmentation_withHero](/assets/segmentation_withHero.png)
 
-Here's training results from segmentation with the target is not in the frame:
+##### Semantic Segmentation without the target:
 ![segmentation_withoutHero](/assets/segmentation_withoutHero.png)
+
+### Results!
+Quad is following behind the target:
+```
+number of validation samples intersection over the union evaulated on 542
+average intersection over union for background is 0.99420453948768
+average intersection over union for other people is 0.29249103914013497
+average intersection over union for the hero is 0.8928129750460355
+number true positives: 539, number false positives: 0, number false negatives: 0
+```
+Quad is on patrol and the target is not visable:
+```
+number of validation samples intersection over the union evaulated on 270
+average intersection over union for background is 0.9808836391767214
+average intersection over union for other people is 0.6079952255542386
+average intersection over union for the hero is 0.0
+number true positives: 0, number false positives: 86, number false negatives: 0
+```
+Detection from far away:
+```
+number of validation samples intersection over the union evaulated on 322
+average intersection over union for background is 0.99564611955333
+average intersection over union for other people is 0.39380282310420306
+average intersection over union for the hero is 0.24797525731904344
+number true positives: 155, number false positives: 4, number false negatives: 146
+```
+True Positive weighted score:
+```
+0.7462365591397849
+```
+The IoU without the target:
+```
+0.570394116183
+```
+Final IoU score:
+```
+0.425648942614
+```
+
 ### **Complications and Limitations**
-Computer graphics card, AWS, etc
+The project was very informative and required external research outside the classroom to understand the reasons behind the design of the Network Architecture, Sizing, and Hyper Parameter tuning. Additional resources for these activities would have been helpful, however in the process of searching, the learning process continues!
+
+From the hardware and model training perspective, my personal computer had severe limitations due to the insufficient graphical computation power required for this project. The initial training was attempted on this machine, and it took over 8 hours, as opposed to AWS completing this same task in nearly 2 hours.
+
+Setting up AWS elastic compute for the first time was a helpful learning experience, but also took time to understand the necessary steps for implementation, as well as preventing unwanted charges. Now that I'm familiar with the process, it's relatively straight forward, and I look forward to using this service for future projects.
 
 ### **Future Enhancements**
-The student is able to clearly articulate whether this model and data would work well for following another object (dog, cat, car, etc.) instead of a human and if not, what changes would be required.
-age, AngularJS powered HTML5 Markdown editor.
+There are many enhancements that would improve the end resulting score in this project:
+- More training data
+- Reviewed problem areas that resulted in false positives, and collect data in these specific use-cases
+- More allocated validation data
+- Refined validation step tuning - Resulted in poor validation loss
+- Additional Hyper Parameter tuning
+- Implemented Skip Connections
+- Variable Learning Rate - It's common to vary the learning rate throughout the epoch progression, and this would have helped lower the training loss and resulted in a higher IoU score
+
+Furthermore, this FCN model could be applied to other agents besides pedestrians, including: animals, vehicles, or buildings. However, this transition to alternative agent classification would require specific training and validation data, as well as additional hyper parameter tuning to achieve similar results.
+
