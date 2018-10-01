@@ -45,12 +45,17 @@ We now have our Network Architecture defined, and will begin to construct our 5 
 
  ![Network_Arch_FCN](/assets/Network_Arch_FCN.PNG)
  
+ ##### **Skip Connections**
+ Something that has proven results for reducing training loss is Skip Connections. When the input layers are swept for enconding feature vectors, an common occurence is that they will capture the granular details, but miss the larger perspective picture. Skip Connections help mitigate this by bypassing adjacent layers for reference. 
+ 
  ### **FCN Model**
 Now that we have properly defined the Architecture and sizing of our FCN, so the next step is to start to implement it! This will be composed of the input image, 2 Encoding layers, a 1x1 convolutional layer, 2 Decoding layers, and finally the ouput. It is important to maintain symmetry by including the same number and sizing of the Encoding and Decoding layers. The FCN Model can be seen here: 
 
 ![FCN_Model](/assets/FCN_Model.PNG)
 
   ##### **Encoder Block**
+The objective of the Encoder is to sweep the input image, and extract features from the image. For our Encoder, we are using a depthwise separable 2D convolution. Separable convolutions act on each input channel separately, followed by a pointwise convolution that merges the resulting output channels. It's a method to factorize a convolution kernel into two smaller kernels, and therefore improve efficiency. More information can be found [here](https://keras.io/layers/convolutional/) in the Keras documentation.
+
 We begin with defining a separable 2D convolution function that utilizes the Keras library:
 ```
 def separable_conv2d_batchnorm(input_layer, filters, strides=1):
@@ -67,7 +72,7 @@ Next, we call this function, and add our parameters for the filter and strides f
     return output_layer
 ```
 ##### **Encoder Layers**
-Now that the Encoder functions are defined, implementing the layers is as simple as calling our encoder block function fore each corresponding layer:
+Now that the Encoder functions are defined, implementing the layers is as simple as calling our encoder block function for each corresponding layer. This will take the original image input, and create the Encoder layers prior to our 1x1 convolution layer:
 ```
 def fcn_model(inputs, num_classes):
     # Encoder Blocks. 
@@ -75,6 +80,11 @@ def fcn_model(inputs, num_classes):
     layer_2 = encoder_block(layer_1, 128, 2)
 ```
  ##### **1x1 Convolution Layer**
+As mentioned previously in the Network Architecture, a 1x1 convolution layer has many benefits including:
+- Both capable of classification, and preservation of spatial information in the image. (Is this a car, and where in the image is this car?)
+- It allows flexibility of different sized input images 
+- More layers can be added to create depth in the network, without causing massive computational cost
+
 For the 1x1 convolution layer we will use a separate 2D convolutional function from the Keras library:
 ```
 def conv2d_batchnorm(input_layer, filters, kernel_size=3, strides=1):
@@ -90,7 +100,12 @@ Similarly to the Encoding layers, we construct the 1x1 convolutional layer by ca
     layer_3 = conv2d_batchnorm(layer_2, 256, kernel_size=1, strides=1)
 ```
  ##### **Decoder**
-Similar to the Encoding layers, but in opposite direction, we will begin to Decode our layers to gradually transition from the 1x1x256 to the desired output image size of 160x160x3. A critical element of the Decoding process is the Bilinear Upsampling, which helps reconstruct our downsampled image:
+Similar to the Encoding layers, but in opposite direction, we will begin to Decode our layers to gradually transition from the 1x1x256 to the desired output image size of 160x160x3. A critical element of the Decoding process is the Bilinear Upsampling, which helps reconstruct our downsampled image.
+
+Bilinear Upsampling helps us transform the downsampled image into the original input image dimensions. This can be represented best by this diagram below:
+
+![Bilinear_Upsampling](/assets/Bilinear_Upsampling.png)
+
  ```
  def bilinear_upsample(input_layer):
     output_layer = BilinearUpSampling2D((2,2))(input_layer)
@@ -256,7 +271,6 @@ There are many enhancements that would improve the end resulting score in this p
 - More allocated validation data
 - Refined validation step tuning - Resulted in poor validation loss
 - Additional Hyper Parameter tuning
-- Implemented Skip Connections
 - Variable Learning Rate - It's common to vary the learning rate throughout the epoch progression, and this would have helped lower the training loss and resulted in a higher IoU score
 
 Furthermore, this FCN model could be applied to other agents besides pedestrians, including: animals, vehicles, or buildings. However, this transition to alternative agent classification would require specific training and validation data, as well as additional hyper parameter tuning to achieve similar results.
