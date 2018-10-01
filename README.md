@@ -26,9 +26,14 @@ Our original image is 256x256 in 2D space, with a depth of 3 for RGB (Red, Blue,
 | Output | Decoder | - - | 3 |
 
 These critical parameters were selected by referencing [this](http://cs231n.github.io/convolutional-networks/) helpful resource, as well as adapting popular selections from one of the top performing Convolutional Networks, ResNet.
-- **Stride = 2:** A stride of 2 moves the filter 2 pixels at a time, which produces small spatial volumes with a nearly negligible loss of quality
- - **Zero Padding = 1** A minimal border of zeros surrounding the image prevents losing image information, as well as controls the spatial size of the output volume
 
+##### **Stride = 2**
+A stride of 2 moves the filter 2 pixels at a time, which produces small spatial volumes with a nearly negligible loss of quality
+
+##### **Zero Padding = 1**
+A minimal border of zeros surrounding the image prevents losing image information, as well as controls the spatial size of the output volume
+
+##### **Layer Height and Width Calculation**
 To determine the convolution layer height and width we use the equation: 
 **(W − F + 2 * P) / S + 1**
 
@@ -36,10 +41,12 @@ Therefore the height and width of our first layer will be **80x80x64**:
 **(160 − 3 + 2 * 1) / 2 + 1**
 
 We now have our Network Architecture defined, and will begin to construct our 5 layer FCN, with the 1x1 convolution layer in the middle. It will look something like this:
+
  ![Network_Arch_FCN](/assets/Network_Arch_FCN.PNG)
  
  ### **FCN Model**
 Now that we have properly defined the Architecture and sizing of our FCN, so the next step is to start to implement it! This will be composed of the input image, 2 Encoding layers, a 1x1 convolutional layer, 2 Decoding layers, and finally the ouput. It is important to maintain symmetry by including the same number and sizing of the Encoding and Decoding layers. The FCN Model can be seen here: 
+
 ![FCN_Model](/assets/FCN_Model.PNG)
 
   ##### **Encoder Block**
@@ -118,24 +125,30 @@ Finally, we're able to construct the output layer with the same desired sizing a
     return layers.Conv2D(num_classes, 3, activation='softmax', padding='same')(layer_5)
 ```
  ### **Training Parameter Selection**
- ##### **Train**
- Training setup
- ```
- image_hw = 160
-image_shape = (image_hw, image_hw, 3)
-inputs = layers.Input(image_shape)
-num_classes = 3
-
-output_layer = fcn_model(inputs, num_classes)
- ```
+With our FCN implemented, we now need to set the hyper parameters. First let's define the parameters we will be using: 
  ##### **Hyper Parameter Definition**
-- **batch_size:** number of training samples/images that get propagated through the network in a single pass
-- **num_epochs:** number of times the entire training dataset gets propagated through the network
-- **steps_per_epoch:** number of batches of training images that go through the network in 1 epoch. We have provided you with a default value. One recommended value to try would be based on the total number of images in training dataset divided by the batch_size
-- **validation_steps:** number of batches of validation images that go through the network in 1 epoch. This is similar to steps_per_epoch, except validation_steps is for the validation dataset. We have provided you with a default value for this as well
-- **workers:** maximum number of processes to spin up. This can affect your training speed and is dependent on your hardware. We have provided a recommended value to work with
+- ##### **learning_rate:** 
+    - A value that multiplies the **derivative of the loss function** prior to subtracting from the corresponding **weight**
+- ##### **batch_size:** 
+    - Number of **images** that are propagated in a **single cycle**
+- ##### **num_epochs:** 
+    - Number of **cycles** that the entire training set propagates through the **network**
+- ##### **steps_per_epoch:** 
+    - Number of **batches** that propagate through the network in a single **epoch**
+- ##### **validation_steps:** 
+    - Number of **batches** for **validation images** that propagate through the network in a single **epoch**
+- ##### **workers:** 
+    - Number of **compute** processes **allocated**
 
  ##### **Hyper Parameter Selection**
+ 
+- **learning_rate:** The initial value I chose was a magnitude of 10 higher. With a learning rate of 0.01, the model trained very quickly, however the end loss was too high, and therefore resulted in an overall IoU accuracy score of less than the target 40%. By slowing down the learning rate to 0.001, the convergence time took a bit longer, but the training loss was significantly improved.
+- **batch_size:** It's recommended that the selected batch size is equivalent to the filter size selected for the initial convolutional layer. I therefore set this parameter to 64, and the results were sufficient.
+- **num_epochs:** Initially, I set the number of epochs to 40 (along with learning_rate of 0.01) and allowed the training to complete for the entire number of epochs. After lowering the learning_rate to 0.001 on my second attempt, I was closely monitoring the convergence as well as the training loss for the model. After the 8th epoch, both the training and validation loss began to oscillate. It's quite common in training to suspend the training prior to reaching the target number of epochs if the training loss worsens. For this reason, I monitored the training loss and suspended the training during the 15th epoch when the training loss had reached a value of 0.0195.
+- **steps_per_epoch:** The steps per epoch should be calculated based on the number of training images and the **batch_size**. Since we have 4,131 images in our training set, this would equate to the number of images divided by the batch size: **4131 / 64**
+- **validation_steps:** This parameter was unchanged, however it resulted in acceptable validation loss and enabled meeting the targeted 40% IoU score.
+- **workers:** The initial training was completed on my personal computer without a powerful GPU. For the second training attempt, I used the AWS elastic compute, and therefore increased the number of allocated compute processes.
+
  ```
 learning_rate = 0.001
 batch_size = 64
@@ -144,15 +157,9 @@ steps_per_epoch = 64
 validation_steps = 50
 workers = 70
  ```
- parameters should be explicitly stated with factual justifications
- Any choice of configurable parameters should also be explained
- how these values were obtained
- Epoch
-Learning Rate
-Batch Size
-Etc.
 
 ##### **Training**
+This is the supporting code provided by the Udacity project to perform the training function:
 ```
 # Define the Keras model and compile it for training
 model = models.Model(inputs=inputs, outputs=output_layer)
@@ -180,9 +187,11 @@ model.fit_generator(train_iter,
                     workers = workers)
 ```
 Initial Training Curve. After a few Epochs:
+
 ![TrainingCurve_Epoch2](/assets/TrainingCurve_Epoch2.png)![TrainingCurve_Epoch2](/assets/TrainingCurve_Epoch4.png)
 
 Towards the end, still improving slightly. Getting worse and oscillating
+
 ![TrainingCurve_Epoch2](/assets/TrainingCurve_Epoch13.png)![TrainingCurve_Epoch2](/assets/TrainingCurve_Epoch14.png)
 
 ### **Performance Results**
