@@ -190,7 +190,7 @@ Initially the number of epochs was set to 50, however I suspended the training d
 ![TrainingCurve_Epoch2](/assets/TrainingCurve_Epoch13.png)![TrainingCurve_Epoch2](/assets/TrainingCurve_Epoch14.png)
 
 ##### Model Weights
-After the model has been trained on AWS, the model weights were written to a file in HDF format ![model_weights.h5](/data/weights/model_weights):
+After the model has been trained on AWS, the model weights were written to a file in HDF format:
 ```
 weight_file_name = 'model_weights'
 model_tools.save_network(model, weight_file_name)
